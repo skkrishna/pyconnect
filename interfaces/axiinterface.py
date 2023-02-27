@@ -71,7 +71,9 @@ class axiinterface(genericinterface):
             iolist['outputs'] = slist
             return iolist
 
-    def getConnections(self, mode='target'):
+    def getConnections(self, mode=None):
+        if not mode:
+            mode = self.mode
         if not (self.configdone):
             super().configure()
         if (mode == self.mode):

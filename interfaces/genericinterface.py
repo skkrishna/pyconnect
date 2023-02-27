@@ -24,13 +24,17 @@ class genericinterface:
     def getIO(self):
         #print("getio-super ", self.configdone)
         iolist = {}
-        iolist['inputs'] = self.inputs
-        iolist['outputs'] = self.outputs
+        if (self.mode == 'target'):
+            iolist['inputs'] = self.inputs
+            iolist['outputs'] = self.outputs
+        else:
+            iolist['inputs'] = self.outputs
+            iolist['outputs'] = self.inputs
         return iolist        
 
     def getConnections(self):
-        connectIn = []
-        connectOut = []
+        connectIn = {}
+        connectOut = {}
         paramKeys = self.params.keys()
         for sig,width,direct,comment in (self.signals):
             if (isinstance(width, int)):
@@ -44,10 +48,14 @@ class genericinterface:
             else:
                 retWidth = None
                 #print("sig ", sig, " width ", width)
-            if (direct == 'input'):
-                connectIn.append((sig, retWidth))
-            elif (direct == 'output'):
-                connectOut.append((sig, retWidth))
+            if ((direct == 'input') and (self.mode == 'target')):
+                connectIn[sig] = retWidth
+            else:
+                connectOut[sig] = retWidth
+            if ((direct == 'output') and (self.mode == 'target')):
+                connectOut[sig] = retWidth
+            else:
+                connectIn[sig] = retWidth
         iolist = {}
         iolist['inputs'] = connectIn
         iolist['outputs'] = connectOut

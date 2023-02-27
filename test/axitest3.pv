@@ -1,0 +1,21 @@
+module axitest3(
+	       );
+
+
+
+<!
+params = {}
+params['WIDWIDTH'] = 1
+params['RIDWIDTH'] = 1
+params['WDATAWIDTH'] = 128
+params['RDATAWIDTH'] = 128
+params['BURSTLEN'] = 2
+a3 = axiinterface('initiator', params)
+self.addIntf(a3, 'sys') 
+!>
+
+
+
+endmodule // axitest3
+
+

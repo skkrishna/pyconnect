@@ -1,0 +1,20 @@
+module axitest1(
+	       );
+
+
+
+<!
+params = {}
+params['WIDWIDTH'] = 1
+params['RIDWIDTH'] = 1
+params['WDATAWIDTH'] = 256
+params['RDATAWIDTH'] = 256
+a1 = axiinterface('target', params)
+self.addIntf(a1) 
+!>
+
+
+
+endmodule // axitest1
+
+

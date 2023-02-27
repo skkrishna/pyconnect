@@ -20,30 +20,45 @@ def printPyInit(fppy,sigDict,params=None,spaceStr="\t"):
     initStr = spaceStr + "def __init__(self):\n"
     fppy.write(initStr)
     spaceStr = spaceStr + "\t"
-    lstStr = spaceStr + "super().__init__()\n"
+    lstStr = spaceStr + "super().__init__('"+ sigDict['design'] + "')\n"
     fppy.write(lstStr)
-    lstStr = "self.inputs = [  "
-    for sig in (sigDict['inputs']):
-        lstStr = lstStr + str(sig) + ", "
-    lstStr = spaceStr+lstStr[0:(len(lstStr)-2)] + "]\n"
-    fppy.write(lstStr)
-    lstStr = "self.outputs = [  "
-    for sig in (sigDict['outputs']):
-        lstStr = lstStr + str(sig) + ", "
-    lstStr = spaceStr+lstStr[0:(len(lstStr)-2)] + "]\n"
-    fppy.write(lstStr)
-    lstStr = "self.wires = [  "
-    for sig in (sigDict['wires']):
-        lstStr = lstStr + str(sig) + ", "
-    lstStr = spaceStr+lstStr[0:(len(lstStr)-2)] + "]\n"
-    fppy.write(lstStr)
-    lstStr = "self.regs = [  "
-    for sig in (sigDict['regs']):
-        lstStr = lstStr + str(sig) + ", "
-    lstStr = spaceStr+lstStr[0:(len(lstStr)-2)] + "]\n"
-    fppy.write(lstStr)
-    lstStr = spaceStr+"self.embStr = {}\n\n"
-    fppy.write(lstStr)
+    if (sigDict['inputs']):
+        lstStr = "self.inputs = [  "
+        for sig in (sigDict['inputs']):
+            lstStr = lstStr + str(sig) + ", "
+        lstStr = spaceStr+lstStr[0:(len(lstStr)-2)] + "]\n"
+        fppy.write(lstStr)
+    if (sigDict['outputs']):
+        lstStr = "self.outputs = [  "
+        for sig in (sigDict['outputs']):
+            lstStr = lstStr + str(sig) + ", "
+        lstStr = spaceStr+lstStr[0:(len(lstStr)-2)] + "]\n"
+        fppy.write(lstStr)
+    if (sigDict['wires']):
+        lstStr = "self.wires = [  "
+        for sig in (sigDict['wires']):
+            lstStr = lstStr + str(sig) + ", "
+        lstStr = spaceStr+lstStr[0:(len(lstStr)-2)] + "]\n"
+        fppy.write(lstStr)
+    if (sigDict['regs']):
+        lstStr = "self.regs = [  "
+        for sig in (sigDict['regs']):
+            lstStr = lstStr + str(sig) + ", "
+        lstStr = spaceStr+lstStr[0:(len(lstStr)-2)] + "]\n"
+        fppy.write(lstStr)
+    if (sigDict['logic']):
+        lstStr = "self.logic = [  "
+        for sig in (sigDict['logic']):
+            lstStr = lstStr + str(sig) + ", "
+        lstStr = spaceStr+lstStr[0:(len(lstStr)-2)] + "]\n"
+        fppy.write(lstStr)
+    #Keep the siglist to rememer the order of signals
+    if (sigDict['siglist']):
+        lstStr = "self.siglist = [  "
+        for sig in (sigDict['siglist']):
+            lstStr = lstStr + str(sig) + ", "
+        lstStr = spaceStr+lstStr[0:(len(lstStr)-2)] + "]\n"
+        fppy.write(lstStr)
 
 def generate_py_file(fppv, fppy, design, VerComments=False):
     modN = False
@@ -51,7 +66,10 @@ def generate_py_file(fppv, fppy, design, VerComments=False):
     outputs = []
     wires = []
     regs = []
+    logic = []
+    siglist = []
     params = {}
+    modSigs = {}
     pyCodeRegion = False
     lineNum = 0
     pyCodeStart = False
@@ -60,16 +78,23 @@ def generate_py_file(fppv, fppy, design, VerComments=False):
     fppy.write("from DesignNode import *\n\n")
     spaceStr = "\t"
     for line in fppv:
-        match = re.search(r"module\s+([A-Za-z0-9]+)\s*(?", line)
+        match = re.search(r"module\s+([A-Za-z0-9]+)\s*[\#\(]?", line)
         if (match):
             print(match)
             modN = True
             modName = match.group(1)
             print("Module = ", modName)
+            inputs = []
+            outputs = []
+            wires = []
+            regs = []
+            logic = []
+            siglist = []
         match = re.search(r"input\s+(logic )?(wire )?\[\s*([A-Za-z0-9\:\s\`]+)\]\s+([A-Za-z0-9]+)", line)
         if (match):
             print(match)
             inputs.append((match.group(4), match.group(3)))
+            siglist.append((match.group(4), 'inputs'))
             print(match.group(3))
             print(match.group(4))
         match = re.search(r"input\s+(logic )?(wire )?\s*([A-Za-z0-9]+)", line)
@@ -77,10 +102,12 @@ def generate_py_file(fppv, fppy, design, VerComments=False):
             print(match)
             print(match.group(3))
             inputs.append((match.group(3), None))
+            siglist.append((match.group(3), 'inputs'))
         match = re.search(r"output\s+(logic )?(wire )?\[\s*([A-Za-z0-9\:\s\`]+)\]\s+([A-Za-z0-9]+)", line)
         if (match):
             print(match)
             outputs.append((match.group(4), match.group(3)))
+            siglist.append((match.group(4), 'outputs'))
             print(match.group(3))
             print(match.group(4))
         match = re.search(r"output\s+(logic )?(wire )?\s*([A-Za-z0-9]+)", line)
@@ -88,22 +115,26 @@ def generate_py_file(fppv, fppy, design, VerComments=False):
             print(match)
             print(match.group(3))
             outputs.append((match.group(3), None))
+            siglist.append((match.group(3), 'outputs'))
         match = re.search(r"endmodule", line)
         if (match):
             #print("end module")
             #pyCodeStart = False
-            modSigs = {}
             modSigs['inputs'] = inputs
             modSigs['outputs'] = outputs
             modSigs['wires'] = wires
             modSigs['regs'] = regs
+            modSigs['logic'] = logic
+            modSigs['siglist'] = siglist
             print("pyCodeRegion ", pyCodeRegion)
             print("pyCodeStart ", pyCodeStart)
             if not pyCodeStart:
                 if (modN):
                     pyClass = "class " + modName + "(DesignNode):\n"
+                    modSigs['design'] = modName
                 else:
                     pyClass = "class " + design + "(DesignNode):\n"
+                    modSigs['design'] = design
                 fppy.write(pyClass)
             printPyInit(fppy,modSigs,params)
             inputs = []
@@ -131,8 +162,10 @@ def generate_py_file(fppv, fppy, design, VerComments=False):
             if not pyCodeStart:
                 if (modN):
                     pyClass = "class " + modName + "(DesignNode):\n"
+                    modSigs['design'] = modName
                 else:
                     pyClass = "class " + design + "(DesignNode):\n"
+                    modSigs['design'] = design
                 fppy.write(pyClass)
                 defStr = "\n\n" + spaceStr + "def exec(self):\n"
                 fppy.write(defStr)
