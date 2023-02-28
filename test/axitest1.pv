@@ -10,7 +10,7 @@ params['RIDWIDTH'] = 1
 params['WDATAWIDTH'] = 256
 params['RDATAWIDTH'] = 256
 a1 = axiinterface('target', params)
-self.addIntf(a1) 
+self.addIntf(a1, 'regs') 
 !>
 
 

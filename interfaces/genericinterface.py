@@ -50,11 +50,11 @@ class genericinterface:
                 #print("sig ", sig, " width ", width)
             if ((direct == 'input') and (self.mode == 'target')):
                 connectIn[sig] = retWidth
-            else:
+            elif (direct == 'input'):
                 connectOut[sig] = retWidth
             if ((direct == 'output') and (self.mode == 'target')):
                 connectOut[sig] = retWidth
-            else:
+            elif (direct == 'output'):
                 connectIn[sig] = retWidth
         iolist = {}
         iolist['inputs'] = connectIn

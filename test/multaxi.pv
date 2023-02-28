@@ -6,10 +6,10 @@ module multaxi(
 self.addInstance('axitest1', 't1')
 self.addInstance('axitest2', 't2')
 self.addInstance('axitest3', 't3')
-self.connectinterfaces(t2.a2, t3.a3)
-!!self.createInstance(t1)
-!!self.createInstance(t2)
-!!self.createInstance(t3)
+self.connectinterfaces('t2.mov', 't3.sys')
+!!self.createInstance('t1')
+!!self.createInstance('t2')
+!!self.createInstance('t3')
 
 !>
 

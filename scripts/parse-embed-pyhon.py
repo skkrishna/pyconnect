@@ -174,7 +174,7 @@ def generate_py_file(fppv, fppy, design, VerComments=False):
             match = re.search(r"\!\!", line)
             if (match):
                 #print("Found !! = ", line)
-                subStr = "self.embStr['" +  str(lineNum) + "'] = self."
+                subStr = "self.embStr['" +  str(lineNum) + "'] = "
                 line = re.sub(r"\!\!\s?", subStr, line)
             lineOut = spaceStr + line
             fppy.write(lineOut)

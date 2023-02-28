@@ -37,7 +37,7 @@ class axiinterface(genericinterface):
                         #Write Response Channel
                         ('bid',	'WIDWIDTH', 'output',	"Response ID Tag. The ID tag of the write response."),
                         ('bresp',	2,	'output',	"Write response. Indicates the status of the write transaction. 2b00 = OKAY"),
-                        ('bvalid',	None,	'Output',	"Write response valid. Indicates that the channel is signaling a valid write response."),
+                        ('bvalid',	None,	'output',	"Write response valid. Indicates that the channel is signaling a valid write response."),
                         ('bready',	None,	'input',	"Response ready. Indicates that the master can accept a write response."),
                         #AXI4 Read Address (Command) Channel
                         ('arid',	'RIDWIDTH', 'input',	"Read address ID. The ID tag for the read address group of signals."),
@@ -58,8 +58,10 @@ class axiinterface(genericinterface):
                         ('rvalid',	None,	'output',	"Read valid. Indicates that the channel is signaling the required read data."),
                         ('rready',	None,	'input',	"Read ready. Indicates that the master can accept the read data and response information.")]
 
-    def getIO(self, mode='target'):
+    def getIO(self, mode=None):
         #print("getio ", self.configdone)
+        if not mode:
+            mode = self.mode
         if not (self.configdone):
             super().configure()
         if (mode == self.mode):
