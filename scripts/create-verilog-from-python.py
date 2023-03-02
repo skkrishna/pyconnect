@@ -1,4 +1,4 @@
-import sys,imp
+import sys
 import re
 import argparse
 import importlib
@@ -18,6 +18,14 @@ def init_argparse() -> argparse.ArgumentParser:
     return parser
 
 def printWireSigns(fpsv, designObj, spaceStr="\t"):
+    if (designObj.params):
+        paramKeys = designObj.params.keys()
+        for keyL in (paramKeys):
+            if (type(designObj.params[keyL]) == int):
+                lstStr = spaceStr + "localparam " + keyL + " = " + str(designObj.params[keyL]) + ";\n"
+            else:
+                lstStr = spaceStr + "localparam " + keyL + " = " + designObj.params[keyL] + ";\n"
+            fpsv.write(lstStr)
     wireKeys = designObj.wires.keys()
     ioStatement = "\n"
     for signls in (wireKeys):
@@ -35,15 +43,19 @@ def printInOutSigns(fpsv, designObj, spaceSize=0):
     for ns in range(spaceSize):
         spaceStr = spaceStr + ' '
 
+    #fpsv.write("printInOutSigns - start\n\n")
     inpList = {}
     outList = {}
     ioStatement = ''
-    ioLine = spaceStr + 'input logic ' +  designObj.clock + ",\n"
-    ioStatement  = ioStatement + ioLine
-    ioLine = spaceStr + 'input logic ' +  designObj.reset + ",\n"
-    ioStatement  = ioStatement + ioLine
+    if (designObj.clock):
+        ioLine = spaceStr + 'input logic ' +  designObj.clock + ",\n"
+        ioStatement  = ioStatement + ioLine
+    if (designObj.reset):
+        ioLine = spaceStr + 'input logic ' +  designObj.reset + ",\n"
+        ioStatement  = ioStatement + ioLine
     for sigName, sigTpe, sigIntf in (designObj.siglist):
         #print(sigName, sigTpe, sigIntf)
+        ioLine = ''
         if (sigTpe == 'int_input'):
             if (sigIntf):
                 ioLine = spaceStr + 'input logic ' +  "[" + sigIntf[1] + " : " + sigIntf[0] + "] " + sigName + ",\n"
@@ -55,7 +67,7 @@ def printInOutSigns(fpsv, designObj, spaceSize=0):
             else:
                 ioLine = spaceStr + 'output logic ' + sigName + ",\n"
         elif (sigIntf):
-            print(sigName, sigTpe, sigIntf)
+            #print(sigName, sigTpe, sigIntf)
             if (sigTpe == 'int_input'):
                 ioLine = spaceStr + 'input logic ' +  "[" + sigIntf[1] + " : " + sigIntf[0] + "] " + sigName + ",\n"
             elif (sigTpe == 'int_output'):
@@ -68,24 +80,26 @@ def printInOutSigns(fpsv, designObj, spaceSize=0):
             if (sigTpe == 'input'):
                 if (sigIntf):
                     sigStr = sigIntf + "_" + sigName
-                if (inpList[sigName]):
-                    sigWidth = inpList[sigName]
-                    ioLine = spaceStr + 'input logic ' +  "[" + sigWidth[1] + " : " + sigWidth[0] + "] " + sigStr + ",\n"
-                else:
-                    ioLine = spaceStr + 'input logic ' + sigStr + ",\n"
+                    if (inpList[sigName]):
+                        sigWidth = inpList[sigName]
+                        ioLine = spaceStr + 'input logic ' +  "[" + sigWidth[1] + " : " + sigWidth[0] + "] " + sigStr + ",\n"
+                    else:
+                        ioLine = spaceStr + 'input logic ' + sigStr + ",\n"
             elif (sigTpe == 'output'):
                 if (sigIntf):
                     sigStr = sigIntf + "_" + sigName
-                if (outList[sigName]):
-                    sigWidth = outList[sigName]
-                    ioLine = spaceStr + 'output logic ' +  "[" + sigWidth[1] + " : " + sigWidth[0] + "] " + sigStr + ",\n"
-                else:
-                    ioLine = spaceStr + 'output logic ' + sigStr + ",\n"
+                    if (sigIntf and outList[sigName]):
+                        sigWidth = outList[sigName]
+                        ioLine = spaceStr + 'output logic ' +  "[" + sigWidth[1] + " : " + sigWidth[0] + "] " + sigStr + ",\n"
+                    else:
+                        ioLine = spaceStr + 'output logic ' + sigStr + ",\n"
             else:
                 ioLine = spaceStr + 'input logic ' + sigName + ",\n"
+        #print(ioLine)
         ioStatement  = ioStatement + ioLine
     ioStatement = ioStatement[0:len(ioStatement)-2] + "\n"
     fpsv.write(ioStatement)
+    #fpsv.write("printInOutSigns - end\n\n")
 
 def generate_sv_file(fppv, fpsv, design, PyComments=False):
     if "/" in (design):
@@ -105,16 +119,25 @@ def generate_sv_file(fppv, fpsv, design, PyComments=False):
     lineNum = 0
     for line in fppv:
         if not addInOutStart:
-            fpsv.write(line)
+            #fpsv.write(line)
             if waitForBracket:
-                match = re.search(r"(\()+\;", line)
+                #fpsv.write(line)
+                match = re.search(r"(\))", line)
                 if (match):
                     addInOutStart = True
                     printInOutSigns(fpsv, designObj, inOutSpacing)
-            match = re.search(r"module\s+([A-Za-z0-9]+)\s*(\#?)(\(?)", line)
+                    #fpsv.write(line)
+            match = re.search(r"module\s+([A-Za-z0-9_]+)\s*(\#?)(\(?)", line)
             if (match):
+                if (designObj.modName):
+                    line = "module " + designObj.modName
+                    if (match.groups()[1]):
+                        line = line + "\n"
+                    else:
+                        line = line  + " (\n"
+                    fpsv.write(line)
                 inOutSpacing = len(line) - 1
-                print(match.groups())
+                #print(match.groups())
                 if (match.groups()[1]):
                     waitForBracket = True
                 elif not (match.groups()[2]):
@@ -124,10 +147,12 @@ def generate_sv_file(fppv, fpsv, design, PyComments=False):
                     addInOutStart = True
                     printInOutSigns(fpsv, designObj, inOutSpacing)
         elif not addInOutEnd:
+            fpsv.write(line)
             match = re.search(r"(\))+\s*\;", line)
             if (match):
+                #print("addInOutEnd ", line)
                 addInOutEnd = True
-                fpsv.write(");\n")
+                #fpsv.write(line)
                 printWireSigns(fpsv, designObj)
         else:
             match = re.search(r"(\<\!)", line)
@@ -147,7 +172,7 @@ def generate_sv_file(fppv, fpsv, design, PyComments=False):
                 pyCodeRegion = False
                 if PyComments:
                     wrStr = "// " + line
-                    fppy.write(wrStr)
+                    fpsv.write(wrStr)
         lineNum = lineNum + 1
 
 def create_verilog_from_python():
@@ -156,7 +181,7 @@ def create_verilog_from_python():
     if not args.files:
         print("list of files to parse")
         exit(1)
-    print("args.verilog ", args.python)
+    print("args.python ", args.python)
     for file in args.files:
         print(file)
         fppv = open(file, 'r')

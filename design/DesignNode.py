@@ -4,7 +4,7 @@ import importlib
 
 class DesignNode:
 
-    def __init__(self, design, modName = None, clock='clk',reset='rstn'):
+    def __init__(self, design, modName = None, clock=None,reset=None):
         self.modName = modName
         self.design = design
         #default clock / reset
@@ -42,8 +42,10 @@ class DesignNode:
                 
     def configure(self):
         self.configDone = True
-        self.siglist.append((self.clock, 'clock', None))
-        self.siglist.append((self.reset, 'reset', None))
+        if (self.clock):
+            self.siglist.append((self.clock, 'clock', None))
+        if (self.reset):
+            self.siglist.append((self.reset, 'reset', None))
         #self.siglist.append((sig, 'input', name))
         #for name, width, ttype in (self.ports):
 
@@ -64,27 +66,27 @@ class DesignNode:
             for ns in range(instansStrSize):
                 spaceStr = spaceStr + ' '
 
-            print(self.instances[inst])
+            #print(self.instances[inst])
             mydesign = importlib.import_module(self.instances[inst])
             thing = getattr(mydesign, self.instances[inst])
             designObj = thing()
             designObj.exec()
             #print(designObj.intf)
             intfsList = designObj.intf.keys()
-            print(intfsList)
+            #print(intfsList)
             connKeyList = self.connections.keys()
             for infs in (intfsList):
                 conStr = inst + "." + infs
-                print(conStr)
+                #print(conStr)
                 curIntf = designObj.intf[infs]
-                print("Name = ", curIntf.name, " clock = ", curIntf.clock)
+                #print("Name = ", curIntf.name, " clock = ", curIntf.clock)
                 sigStr = curIntf.clock
                 instansStr = instansStr + spaceStr + "." + sigStr + "( " + sigStr + " ),\n"
                 sigStr = curIntf.reset
                 instansStr = instansStr + spaceStr + "." + sigStr + "( " + sigStr + " ),\n"
                 if conStr in connKeyList:
-                    print("Have connect to ", self.connections[conStr])
-                    print("Mode setting ", curIntf.mode)
+                    #print("Have connect to ", self.connections[conStr])
+                    #print("Mode setting ", curIntf.mode)
                     iolist = curIntf.getConnections()
                     inputs = iolist['inputs']
                     inpSigList = inputs.keys()

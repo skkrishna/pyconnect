@@ -1,0 +1,109 @@
+<!!
+from PrintVerilogFunctions import *
+!!>
+
+module genFifo #(
+		 parameter FIFO_DEPTH = 4,
+		 parameter FIFO_DEPTH_BITS = 2,
+		 parameter DATAWIDTH = 8
+		 )
+   (
+    input logic 			 clk,
+    input logic 			 rstn,
+    output logic 		 empty,
+    output logic 		 full,
+    input logic [DATAWIDTH-1:0]  indata,
+    output logic [DATAWIDTH-1:0] outdata,
+    input logic 			 push,
+    input logic 			 pop);
+
+   localparam   MAXPTRVAL = FIFO_DEPTH-1;
+
+   logic [FIFO_DEPTH_BITS : 0] 	 rd_ptr;
+   logic [FIFO_DEPTH_BITS : 0] 	 wr_ptr;
+   logic [FIFO_DEPTH_BITS-1 : 0] max_ptr;
+   logic [DATAWIDTH-1:0] 	 dat0;
+   logic [DATAWIDTH-1:0] 	 dat1;
+   logic [DATAWIDTH-1:0] 	 dat2;
+   logic [DATAWIDTH-1:0] 	 dat3;
+
+   assign max_ptr = MAXPTRVAL;
+
+   function [FIFO_DEPTH_BITS:0] incPtr(input [FIFO_DEPTH_BITS:0] inpPtr, input [FIFO_DEPTH_BITS-1:0] maxVal);
+      logic 			 taway;
+      begin
+         if (inpPtr[FIFO_DEPTH_BITS-1:0] == maxVal[FIFO_DEPTH_BITS-1:0]) begin
+            incPtr[FIFO_DEPTH_BITS-1:0] = '0;
+            incPtr[FIFO_DEPTH_BITS] = ~inpPtr[FIFO_DEPTH_BITS];
+         end
+         else begin
+            {taway, incPtr[FIFO_DEPTH_BITS-1:0]} = inpPtr[FIFO_DEPTH_BITS-1:0] + 1;
+            incPtr[FIFO_DEPTH_BITS] = inpPtr[FIFO_DEPTH_BITS];
+         end
+      end
+   endfunction
+
+<!
+self.modName='zebra'
+inpVariable = 'rd_ptr[FIFO_DEPTH_BITS-1 : 0]'
+events = []
+for cnts in range( self.params['FIFO_DEPTH']):
+    events.append((str(cnts), "outdata = dat" + str(cnts)))
+events.append(('default', "outdata = dat" + str(cnts)))
+caseStr = mkCase(inpVariable, events, "\t\t")
+events = []
+addStr = caseStr
+!!mkAlwaysComb(events, addStr, "\t")
+!>
+
+   always@(posedge clk or negedge rstn) begin
+      if (~rstn) begin
+	 dat0 <= '0;
+	 dat1 <= '0;
+	 dat2 <= '0;
+	 dat3 <= '0;
+      end
+      else begin
+	 if (push) begin
+<!
+inpVariable = 'wr_ptr[FIFO_DEPTH_BITS-1 : 0]'
+events = []
+for cnts in range( self.params['FIFO_DEPTH']):
+    events.append((str(cnts), "dat" + str(cnts) + " <= indata"))
+!!mkCase(inpVariable, events, "\t\t")
+!>
+	 end
+      end // else: !if(~rstn)
+   end
+   
+   always_ff begin
+      if (~rstn) begin
+	 rd_ptr <= '0;
+	 wr_ptr <= '0;
+      end
+      else begin
+	 case({push,pop})
+	   2'b00: begin
+	      rd_ptr <= rd_ptr;
+	      wr_ptr <= wr_ptr;
+	   end
+	   2'b01: begin
+	      rd_ptr <= incPtr(rd_ptr);
+	      wr_ptr <= wr_ptr;
+	   end
+	   2'b10: begin
+	      rd_ptr <= rd_ptr;
+	      wr_ptr <= incPtr(wr_ptr);
+	   end
+	   2'b11: begin
+	      rd_ptr <= incPtr(rd_ptr);
+	      wr_ptr <= incPtr(wr_ptr);
+	   end
+	 endcase // case ({push,pop})
+      end // else: !if(~rstn)
+   end
+   
+   assign empty = (rd_ptr == wr_ptr);
+   assign full = (rd_ptr[FIFO_DEPTH_BITS-1:0] == wr_ptr[FIFO_DEPTH_BITS-1:0]) & (rd_ptr[FIFO_DEPTH_BITS] ^ wr_ptr[FIFO_DEPTH_BITS]);
+
+endmodule // genfifo
