@@ -1,0 +1,23 @@
+module genSync(
+	       input wire   clk,
+	       input wire   rstn,
+	       input wire   din,
+	       output logic dout);
+   logic 		    dout0;
+   logic 		    dout1;
+
+   // TODO - Add ifdef for process synchronizer flops
+
+   always @(posedge clk or negedge rstn) begin
+      if (~rstn) begin
+	 dout0 <= '0;
+	 dout1 <= '0;
+      end
+      else begin
+         dout0 <= din;
+         dout1 <= dout0;
+      end
+   end
+   assign dout = dout1;
+
+endmodule

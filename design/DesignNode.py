@@ -56,9 +56,14 @@ class DesignNode:
         self.connections[intf1] = intf2
         self.connections[intf2] = intf1
 
+    def connectports(self, port1, port2):
+        self.connections[port1] = port2
+
     def createInstance(self, inst):
         instansStr = '//No such instance'
         instansStrSize = 1
+        connKeyList = self.connections.keys()
+        #print(connKeyList)
         if (self.instances[inst]):
             instansStr = self.instances[inst] + " " + inst + "(\n"
             instansStrSize = len(instansStr) - 1
@@ -70,11 +75,11 @@ class DesignNode:
             mydesign = importlib.import_module(self.instances[inst])
             thing = getattr(mydesign, self.instances[inst])
             designObj = thing()
-            designObj.exec()
+            if callable(getattr(designObj, 'exec', None)):
+                designObj.exec()
             #print(designObj.intf)
             intfsList = designObj.intf.keys()
             #print(intfsList)
-            connKeyList = self.connections.keys()
             for infs in (intfsList):
                 conStr = inst + "." + infs
                 #print(conStr)
@@ -123,7 +128,12 @@ class DesignNode:
                         instansStr = instansStr + spaceStr + "." + sigStr + "( " + sigStr + " ),\n"
                         #self.wires[sigStr] = outputs[outSigs]
                         self.siglist.append((sigStr, 'int_output', outputs[outSigs]))
-                
+
+            for inps, inwidth in (designObj.inputs + designObj.outputs):
+                if inps in (connKeyList):
+                    instansStr = instansStr + spaceStr + "." + inps + "( " + self.connections[inps] + " ),\n"
+                else:
+                    instansStr = instansStr + spaceStr + "." + inps + "( " + "   "  + " ),\n"
             instansStr = instansStr[0:len(instansStr)-2] + "\n" + spaceStr + ");\n"
         #print(instansStr)
         return instansStr

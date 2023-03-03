@@ -114,16 +114,16 @@ def generate_py_file(fppv, fppy, design, VerComments=False):
             siglist = []
         match = re.search(r"input\s+(logic )?(wire )?\[\s*([A-Za-z0-9\:\s\`\-\+\*\/]+)\]\s+([A-Za-z0-9]+)", line)
         if (match):
-            print("Type4 = ", match.groups())
+            #print("Type4 = ", match.groups())
             inputs.append((match.group(4), match.group(3)))
             siglist.append((match.group(4), 'input', None))
-            print(match.group(3))
-            print(match.group(4))
+            #print(match.group(3))
+            #print(match.group(4))
         else:
             match = re.search(r"input\s+(logic )?(wire )?\s*([A-Za-z0-9]+)", line)
             if (match):
-                print("Type3 = ", match.groups())
-                print(match.group(3))
+                #print("Type3 = ", match.groups())
+                #print(match.group(3))
                 inputs.append((match.group(3), None))
                 siglist.append((match.group(3), 'input', None))
         match = re.search(r"output\s+(logic )?(wire )?\[\s*([A-Za-z0-9\:\s\`\-\+\*\/]+)\]\s+([A-Za-z0-9]+)", line)
@@ -131,13 +131,13 @@ def generate_py_file(fppv, fppy, design, VerComments=False):
             print("Type4-O- = ", match)
             outputs.append((match.group(4), match.group(3)))
             siglist.append((match.group(4), 'output', None))
-            print(match.group(3))
-            print(match.group(4))
+            #print(match.group(3))
+            #print(match.group(4))
         else:
             match = re.search(r"output\s+(logic )?(wire )?\s*([A-Za-z0-9]+)", line)
             if (match):
-                print("Type3-O- = ", match.groups())
-                print(match.group(3))
+                #print("Type3-O- = ", match.groups())
+                #print(match.group(3))
                 outputs.append((match.group(3), None))
                 siglist.append((match.group(3), 'output', None))
         match = re.search(r"endmodule", line)
@@ -178,6 +178,7 @@ def generate_py_file(fppv, fppy, design, VerComments=False):
                 wrStr = "## " + line
                 if VerComments:
                     fppy.write(wrStr)
+                lineNum = lineNum + 1
                 continue
         match = re.search(r"(\!\>)",line)
         if (match):
@@ -212,7 +213,7 @@ def generate_py_file(fppv, fppy, design, VerComments=False):
             lineOut = spaceStr + line
             fppy.write(lineOut)
         lineNum = lineNum + 1
-
+        #print("lineNum = ", lineNum, line)
 
 def parse_embed_python():
     parser = init_argparse()

@@ -109,7 +109,8 @@ def generate_sv_file(fppv, fpsv, design, PyComments=False):
     thing = getattr(mydesign, design)
     designObj = thing()
     print(designObj.design)
-    designObj.exec()
+    if callable(getattr(designObj, 'exec', None)):
+        designObj.exec()
     embKeys = designObj.embStr.keys()
     addInOutStart = False
     addInOutEnd = False
@@ -135,7 +136,10 @@ def generate_sv_file(fppv, fpsv, design, PyComments=False):
                         line = line + "\n"
                     else:
                         line = line  + " (\n"
-                    fpsv.write(line)
+                else:
+                    #line = re.sub(r"module\s+[A-Za-z0-9_]+\s*(\#?)", 'saa', line)
+                    line = re.sub(r"\#\s?\(", '', line)
+                fpsv.write(line)
                 inOutSpacing = len(line) - 1
                 #print(match.groups())
                 if (match.groups()[1]):
@@ -161,6 +165,7 @@ def generate_sv_file(fppv, fpsv, design, PyComments=False):
                 if PyComments:
                     wrStr = "// " + line
                     fpsv.write(wrStr)
+            #print("lineNum = ", lineNum, pyCodeRegion, line)
             if not (pyCodeRegion):
                 fpsv.write(line)
             else:

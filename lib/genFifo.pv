@@ -22,10 +22,12 @@ module genFifo #(
    logic [FIFO_DEPTH_BITS : 0] 	 rd_ptr;
    logic [FIFO_DEPTH_BITS : 0] 	 wr_ptr;
    logic [FIFO_DEPTH_BITS-1 : 0] max_ptr;
-   logic [DATAWIDTH-1:0] 	 dat0;
-   logic [DATAWIDTH-1:0] 	 dat1;
-   logic [DATAWIDTH-1:0] 	 dat2;
-   logic [DATAWIDTH-1:0] 	 dat3;
+<!
+intStr = ''
+for cnts in range( self.params['FIFO_DEPTH']):
+    intStr = intStr + "   logic [DATAWIDTH-1:0]  dat" + str(cnts) + ";\n"
+!!intStr
+!>
 
    assign max_ptr = MAXPTRVAL;
 
@@ -44,7 +46,6 @@ module genFifo #(
    endfunction
 
 <!
-self.modName='zebra'
 inpVariable = 'rd_ptr[FIFO_DEPTH_BITS-1 : 0]'
 events = []
 for cnts in range( self.params['FIFO_DEPTH']):
@@ -56,12 +57,14 @@ addStr = caseStr
 !!mkAlwaysComb(events, addStr, "\t")
 !>
 
-   always@(posedge clk or negedge rstn) begin
+   always @(posedge clk or negedge rstn) begin
       if (~rstn) begin
-	 dat0 <= '0;
-	 dat1 <= '0;
-	 dat2 <= '0;
-	 dat3 <= '0;
+<!
+intStr = ''
+for cnts in range( self.params['FIFO_DEPTH']):
+    intStr = intStr + "         dat" + str(cnts) + " <= '0;\n"
+!!intStr
+!>
       end
       else begin
 	 if (push) begin

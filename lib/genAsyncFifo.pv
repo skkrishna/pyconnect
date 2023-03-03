@@ -1,0 +1,142 @@
+<!!
+from PrintVerilogFunctions import *
+!!>
+
+module genAsyncFifo #(
+		 parameter FIFO_DEPTH = 8,
+		 parameter FIFO_DEPTH_BITS = 3,
+		 parameter DEPTH_CUSHION = 4,
+		 parameter DATAWIDTH = 8
+		 )
+   (
+    input logic 			 wclk,
+    input logic 			 wrstn,
+    input logic 			 rclk,
+    input logic 			 rrstn,
+    output logic 		         empty,
+    output logic 		 full,
+    output logic 		 early_full,
+    input logic [DATAWIDTH-1:0]  indata,
+    output logic [DATAWIDTH-1:0] outdata,
+    input logic 			 push,
+    input logic 			 pop);
+
+   localparam   MAXPTRVAL = FIFO_DEPTH-1;
+
+   logic [FIFO_DEPTH_BITS : 0] 	 rd_ptr;
+   logic [FIFO_DEPTH_BITS : 0] 	 wr_ptr;
+   logic [FIFO_DEPTH_BITS : 0] 	 rd_ptr_gray;
+   logic [FIFO_DEPTH_BITS : 0] 	 wr_ptr_gray;
+   logic [FIFO_DEPTH_BITS : 0] 	 rd_ptr_gray_sync;
+   logic [FIFO_DEPTH_BITS : 0] 	 wr_ptr_gray_sync;
+   logic [FIFO_DEPTH_BITS : 0] 	 wr_cushion;
+   logic [FIFO_DEPTH_BITS : 0] 	 wr_cushion_gray;
+   logic [FIFO_DEPTH_BITS-1 : 0] max_ptr;
+<!
+intStr = ''
+for cnts in range( self.params['FIFO_DEPTH']):
+    intStr = intStr + "   logic [DATAWIDTH-1:0]  dat" + str(cnts) + ";\n"
+!!intStr
+!>
+
+   assign max_ptr = MAXPTRVAL;
+
+   function [FIFO_DEPTH_BITS:0] incPtr(input [FIFO_DEPTH_BITS:0] inpPtr, input [FIFO_DEPTH_BITS-1:0] maxVal);
+      logic 			 taway;
+      begin
+         if (inpPtr[FIFO_DEPTH_BITS-1:0] == maxVal[FIFO_DEPTH_BITS-1:0]) begin
+            incPtr[FIFO_DEPTH_BITS-1:0] = '0;
+            incPtr[FIFO_DEPTH_BITS] = ~inpPtr[FIFO_DEPTH_BITS];
+         end
+         else begin
+            {taway, incPtr[FIFO_DEPTH_BITS-1:0]} = inpPtr[FIFO_DEPTH_BITS-1:0] + 1;
+            incPtr[FIFO_DEPTH_BITS] = inpPtr[FIFO_DEPTH_BITS];
+         end
+      end
+   endfunction
+
+<!
+inpVariable = 'rd_ptr[FIFO_DEPTH_BITS-1 : 0]'
+events = []
+for cnts in range( self.params['FIFO_DEPTH']):
+    events.append((str(cnts), "outdata = dat" + str(cnts)))
+events.append(('default', "outdata = dat" + str(cnts)))
+caseStr = mkCase(inpVariable, events, "\t\t")
+events = []
+addStr = caseStr
+!!mkAlwaysComb(events, addStr, "\t")
+!>
+
+   always @(posedge wclk or negedge wrstn) begin
+      if (~rstn) begin
+<!
+intStr = ''
+for cnts in range( self.params['FIFO_DEPTH']):
+    intStr = intStr + "         dat" + str(cnts) + " <= '0;\n"
+!!intStr
+!>
+      end
+      else begin
+	 if (push) begin
+<!
+inpVariable = 'wr_ptr[FIFO_DEPTH_BITS-1 : 0]'
+events = []
+for cnts in range( self.params['FIFO_DEPTH']):
+    events.append((str(cnts), "dat" + str(cnts) + " <= indata"))
+!!mkCase(inpVariable, events, "\t\t")
+!>
+	 end
+      end // else: !if(~rstn)
+   end
+   
+   always @(posedge wclk or negedge wrstn) begin
+      if (~wrstn) begin
+	 wr_ptr <= '0;
+      end
+      else begin
+         if (push)
+           wr_ptr <= incPtr(wr_ptr);
+      end
+   end
+   
+   always @(posedge rclk or negedge rrstn) begin
+      if (~rrstn) begin
+	 rd_ptr <= '0;
+      end
+      else begin
+         if (pop)
+           rd_ptr <= incPtr(rd_ptr);
+      end
+   end
+
+   assign wr_ptr_gray = wr_ptr[FIFO_DEPTH_BITS : 0] ^ {1'b0, wr_ptr[FIFO_DEPTH_BITS : 1]};
+   assign wr_cushion = wr_cushion + DEPTH_CUSHION;
+   assign wr_cushion_gray = wr_cushion[FIFO_DEPTH_BITS : 0] ^ {1'b0, wr_cushion[FIFO_DEPTH_BITS : 1]};
+   assign rd_ptr_gray = rd_ptr[FIFO_DEPTH_BITS : 0] ^ {1'b0, rd_ptr[FIFO_DEPTH_BITS : 1]};
+
+   assign empty = (rd_ptr_gray == wr_ptr_gray_sync);
+   assign full = (rd_ptr_gray_sync[FIFO_DEPTH_BITS-2:0] == wr_ptr_gray[FIFO_DEPTH_BITS-2:0]) & (~(rd_ptr_gray[FIFO_DEPTH_BITS:FIFO_DEPTH_BITS-1]) == wr_ptr_gray[FIFO_DEPTH_BITS:FIFO_DEPTH_BITS-1]);
+   assign early_full = (rd_ptr_gray_sync[FIFO_DEPTH_BITS-2:0] == wr_cushion_gray[FIFO_DEPTH_BITS-2:0]) & (~(rd_ptr_gray[FIFO_DEPTH_BITS:FIFO_DEPTH_BITS-1]) == wr_cushion_gray[FIFO_DEPTH_BITS:FIFO_DEPTH_BITS-1]);
+
+<!
+instStr = ''
+for cnts in range( self.params['FIFO_DEPTH_BITS']):
+    self.connectports('clk', 'rclk')
+    self.connectports('rstn', 'rrstn')
+    self.connectports('din', 'wr_ptr_gray['+str(cnts)+']')
+    self.connectports('dout', 'wr_ptr_gray_snc['+str(cnts)+']' )
+    self.addInstance('genSync', 'rs'+str(cnts))
+    instStr = instStr + self.createInstance('rs'+str(cnts))
+!!instStr
+instStr = ''
+for cnts in range( self.params['FIFO_DEPTH_BITS']):
+    self.connectports('clk', 'wclk')
+    self.connectports('rstn', 'wrstn')
+    self.connectports('din', 'rd_ptr_gray['+str(cnts)+']')
+    self.connectports('dout', 'rd_ptr_gray_snc['+str(cnts)+']' )
+    self.addInstance('genSync', 'ws'+str(cnts))
+    instStr = instStr + self.createInstance('ws'+str(cnts))
+!!instStr
+!>
+
+endmodule // genfifo
