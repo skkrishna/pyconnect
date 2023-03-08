@@ -10,8 +10,10 @@ self.connectinterfaces('t2.mov', 't3.sys')
 !!self.createInstance('t1')
 !!self.createInstance('t2')
 !!self.createInstance('t3')
-
+ports = {}
+ports['clk'] = 'clk'
+self.addInstance('genFifo', 'gf', ports)
+!!self.createInstance('gf')
 !>
-
 
 endmodule

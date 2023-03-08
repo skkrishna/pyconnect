@@ -12,7 +12,7 @@ class genericinterface:
         self.reset = self.name + "_rstn"
 
     def configure(self):
-        print("Running configure")
+        #print("Running configure")
         self.configdone = True
         for sig,width,direct,comment in (self.signals):
             #print(sig,width,direct,comment)

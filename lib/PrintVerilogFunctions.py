@@ -25,10 +25,10 @@ def mkCondStmnt(cond, spaceStr=None):
         
         
 def mkAlwaysComb(events, addStr, spaceStr=None, typeFF=False):
-    print("spaceStr = ", spaceStr,"|")
+    #print("spaceStr = ", spaceStr,"|")
     strComb = ''
     strComb = strComb + "always_comb begin\n"
-    print("strComb ", strComb)
+    #print("strComb ", strComb)
     if (spaceStr):
         strComb = spaceStr + strComb
         evntSpaceStr = spaceStr + "\t"
