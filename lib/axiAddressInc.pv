@@ -1,0 +1,43 @@
+<!!
+from PrintVerilogFunctions import *
+!!>
+
+module axiAddressInc #(
+       parameter ADDRWIDTH = 12,
+       parameter BURSTSIZE = 3,
+       parameter BURSTLENGTH = 6
+) (
+  input logic [ADDRWIDTH-1:0] addr_in,
+  input logic [BURSTSIZE-1:0] asize,
+  input logic [BURSTLENGTH-1:0] alen,
+  input logic [1:0] atype,
+  output logic [ADDRWIDTH-1:0] addr_out
+);
+
+localparam  BURST_WRAP = 2'b10;
+localparam  BURST_FIXED = 2'b00;
+<!
+self.wires['shift_adress'] = ('0', 'ADDRWIDTH-1')
+self.wires['wrap_adress'] = ('0', 'ADDRWIDTH-1')
+self.wires['trunc_adress'] = ('0', 'ADDRWIDTH-1')
+self.wires['burst_adress'] = ('0', 'ADDRWIDTH-1')
+inpVariable = 'asize[BURSTSIZE-1:0]'
+events = []
+for cnts in range( 2 ** self.params['BURSTSIZE']):
+    if (cnts == 0):
+        events.append((str(cnts), "   shift_address = addr_in[ADDRWIDTH-1:0];\n" + "   burst_address = trunc_address[ADDRWIDTH-1:0]"))
+    else:
+        events.append((str(cnts), "   shift_address = { " + str(cnts) + "'d0, addr_in[ADDRWIDTH-1:" + str(cnts) + "]};\n" + "   burst_address = {trunc_address[" + str(self.params['ADDRWIDTH'] - cnts - 1) + ":0]," + str(cnts) + "'d0}"))
+events.append(('default', "BURSTSIZE'd" + str(0) + " : shift_address = addr_in[ADDRWIDTH-1:0]"))
+caseStr = mkCase(inpVariable, events, "\t\t")
+events = []
+addStr = caseStr
+!!mkAlwaysComb(events, addStr, "\t")
+!>
+
+assign addr_plus_1 = shift_adress + 1;
+assign wrap_adress[BURSTLENGTH-1:0] = (alen & addr_plus_1[BURSTLENGTH-1:0]) | (~alen & shift_address[BURSTLENGTH-1:0]);
+assign wrap_adress[ADDRWIDTH-1:BURSTLENGTH] = shift_address[ADDRWIDTH-1:BURSTLENGTH];
+assign trunc_address = (atype == BURST_WRAP) ? wrap_adress : addr_plus_1;
+assign addr_out = (atype == BURST_FIXED) ? addr_in : burst_address;
+endmodule

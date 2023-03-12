@@ -112,6 +112,7 @@ def generate_sv_file(fppv, fpsv, design, PyComments=False):
     if callable(getattr(designObj, 'exec', None)):
         designObj.exec()
     embKeys = designObj.embStr.keys()
+    paramKeys = designObj.params.keys()
     addInOutStart = False
     addInOutEnd = False
     waitForBracket = False
@@ -120,15 +121,19 @@ def generate_sv_file(fppv, fpsv, design, PyComments=False):
     lineNum = 0
     for line in fppv:
         if not addInOutStart:
+            #print(line)
             #fpsv.write(line)
             if waitForBracket:
                 #fpsv.write(line)
                 match = re.search(r"(\))", line)
                 if (match):
                     addInOutStart = True
+                    secondMatch = re.search(r"(\)\s*\()", line)
+                    if (secondMatch):
+                        fpsv.write("(\n")
                     printInOutSigns(fpsv, designObj, inOutSpacing)
                     #fpsv.write(line)
-            match = re.search(r"module\s+([A-Za-z0-9_]+)\s*(\#?)(\(?)", line)
+            match = re.search(r"module\s+([A-Za-z0-9_]+)\s*(\#?)\s?(\(?)", line)
             if (match):
                 if (designObj.modName):
                     line = "module " + designObj.modName
@@ -137,7 +142,6 @@ def generate_sv_file(fppv, fpsv, design, PyComments=False):
                     else:
                         line = line  + " (\n"
                 else:
-                    #line = re.sub(r"module\s+[A-Za-z0-9_]+\s*(\#?)", 'saa', line)
                     line = re.sub(r"\#\s?\(", '', line)
                 fpsv.write(line)
                 inOutSpacing = len(line) - 1
@@ -149,8 +153,18 @@ def generate_sv_file(fppv, fpsv, design, PyComments=False):
                 else:
                     waitForBracket = False
                     addInOutStart = True
+                    print(line)
                     printInOutSigns(fpsv, designObj, inOutSpacing)
         elif not addInOutEnd:
+            for prms in (paramKeys):
+                #print("params = ", prms, " to ", designObj.params[prms])
+                if (type(designObj.params[prms]) == str):
+                    chngVal = designObj.params[prms]
+                else:
+                    chngVal = str(designObj.params[prms])
+                string_column = r"\b{}\b".format(prms)
+                line = re.sub(string_column, chngVal, line)
+            #print(line)
             fpsv.write(line)
             match = re.search(r"(\))+\s*\;", line)
             if (match):
